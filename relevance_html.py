@@ -188,7 +188,7 @@ class RelevantHTML:
                     irre_pre += 1
             else:
                 re_lab += 1
-                if self.test_actual[i] == 1:
+                if self.test_predicted[i] == 1:
                     re_pre += 1
         irre_recall = irre_pre / irre_lab
         re_recall = re_pre / re_lab
@@ -236,17 +236,21 @@ class RelevantHTML:
 
 
 def main():
-    clf = RelevantHTML('university')
-    clf.fit('data/train.txt')
-    clf.valid('data/test.txt')
+    clf = RelevantHTML('science')
+    clf.fit('data/science_train200.txt')
+    clf.valid('data/science_test178.txt')
+    print("Accuracy:")
     print(clf.accuracy())
+    print("Recall: (Relevant, Irrelevant)")
     print(clf.recall())
+    print("Precision: (Relevant, Irrelevant)")
     print(clf.precision())
+    print("F1_Score: (Relevant, Irrelevant)")
     print(clf.f1_score())
-    lbl = clf.predict(
-        'https://www.nydailynews.com/'
-        'sd-no-schoolnews-parkuniversity-grads-20181015-story.html')
-    print('Relevant' if lbl == 1 else 'Irrelevant')
+    # lbl = clf.predict(
+    #     'https://www.nydailynews.com/'
+    #     'sd-no-schoolnews-parkuniversity-grads-20181015-story.html')
+    # print('Relevant' if lbl == 1 else 'Irrelevant')
 
 
 if __name__ == '__main__':
