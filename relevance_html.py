@@ -144,6 +144,7 @@ class RelevantHTML:
             if ret:
                 to_test.append(ret)
                 test_label.append(d_list[0])
+        self.test_label = np.array(test_label, dtype='float64')
         # Get test_fea with full features of 11
         test_fea = self.complete_features(to_test)
         # Get the prediction label of test
@@ -157,7 +158,52 @@ class RelevantHTML:
                 res[i] = 0
             else:
                 res[i] = 1
-        return (res, np.array(test_label, dtype="float64"))
+        self.predicted_label = res
+        return res
+
+    def accuracy(self):
+        base = 0
+        for i in range(len(self.predicted_label)):
+            if self.predicted_label[i] == self.test_label[i]:
+                base += 1
+        acc = base/len(self.predicted_label)
+        return acc
+
+    def recall(self):
+        irre_lab = 0
+        irre_pre = 0
+        re_lab = 0
+        re_pre = 0
+        for i in range(len(self.test_label)):
+            if self.test_label[i] == 0:
+                irre_lab += 1
+                if self.predicted_label[i] == 0:
+                    irre_pre += 1
+            else:
+                re_lab += 1
+                if self.test_label[i] == 1:
+                    re_pre += 1
+        irre_recall = irre_pre/irre_lab
+        re_recall = re_pre/re_lab
+        return re_recall, irre_recall
+
+    def precision(self):
+        irre_lab = 0
+        irre_pre = 0
+        re_lab = 0
+        re_pre = 0
+        for i in range(len(self.predicted_label)):
+            if self.predicted_label[i] == 0:
+                irre_pre += 1
+                if self.test_label[i] == 0:
+                    irre_lab += 1
+            else:
+                re_pre += 1
+                if self.test_label[i] == 1:
+                    re_lab += 1
+        irre_precision = irre_lab/irre_pre
+        re_precision = re_lab/re_pre
+        return re_precision, irre_precision
 
 
 def main():
@@ -165,6 +211,9 @@ def main():
     bata.fit('data/train.txt')
     res = bata.predict('data/test.txt')
     print('Result: prediction, validation', res, sep='\n')
+    print(bata.accuracy())
+    print(bata.recall())
+    print(bata.precision())
 
 
 if __name__ == '__main__':
