@@ -97,8 +97,7 @@ def complete_features(d, topic):
 # return the beta of linear regression
 def train(filename, topic):
     # read train tag:text and label
-    topic = "university"
-    data = open('train.txt', 'r').read().split('\n')
+    data = open(filename, 'r').read().split('\n')
     train_text = []
     label = []
     for d in data:
@@ -123,7 +122,7 @@ def train(filename, topic):
 # return the prediction label and validation label
 def test(filename, topic, w):
     # read test tag:text and label
-    test = open(filename, 'r').read().split('\n')[0:30]
+    test = open(filename, 'r').read().split('\n')
     to_test = []
     test_label = []
     for d in test:
@@ -136,15 +135,13 @@ def test(filename, topic, w):
     test_fea = complete_features(to_test, topic)
     # Get the prediction label of test
     test_res = np.dot(np.column_stack((test_fea, np.ones((len(test_fea), 1)))), w)
-    # 0.0-0.33 irrelevant 0.33-0.66 weak relevant 0.66-1.0 strong relevant
+    # 0.0-0.5 irrelevant 0.5-1.0 relevant
     res = np.zeros(len(test_res))
     for i in range(0, len(test_res)):
-        if test_res[i] <= 0.33:
+        if test_res[i] <= 0.5:
             res[i] = 0
-        elif test_res[i] >= 0.66:
-            res[i] = 1
         else:
-            res[i] = 0.5
+            res[i] = 1
     return (res, np.array(test_label,dtype="float64"))
 
 
@@ -152,6 +149,6 @@ def test(filename, topic, w):
 beta = train('train.txt', 'university')
 print("Model: ")
 print(beta)
-res = test('train.txt', 'university', beta)
+res = test('test.txt', 'university', beta)
 print("Result: prediction, validation")
 print(res)
