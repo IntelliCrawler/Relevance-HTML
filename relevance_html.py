@@ -1,4 +1,5 @@
 import math
+import os
 import re
 import string
 from collections import defaultdict
@@ -17,8 +18,15 @@ class RelevantHTML:
             self.model = model
         else:
             path = 'model/GoogleNews-vectors-negative300.bin'
-            self.model = gensim.models.KeyedVectors.load_word2vec_format(
-                path, binary=True)
+            if os.path.isfile(path):
+                self.model = gensim.models.KeyedVectors.load_word2vec_format(
+                    path, binary=True)
+            else:
+                raise FileNotFoundError(
+                    f"No such file: '{path}'\n"
+                    "Pre-trained word and phrase vectors not found. "
+                    "You can download the file at "
+                    "https://code.google.com/archive/p/word2vec/.")
 
     # Get tf value for each tag
     def get_tf(self, s, contain_topic):
@@ -144,7 +152,7 @@ class RelevantHTML:
             if ret:
                 to_test.append(ret)
                 test_label.append(d_list[0])
-        self.test_label = np.array(test_label, dtype='float64')
+        self.test_actual = np.array(test_label, dtype='float64')
         # Get test_fea with full features of 11
         test_fea = self.complete_features(to_test)
         # Get the prediction label of test
@@ -158,15 +166,14 @@ class RelevantHTML:
                 res[i] = 0
             else:
                 res[i] = 1
-        self.predicted_label = res
-        return res
+        self.test_predicted = res
 
     def accuracy(self):
         base = 0
-        for i in range(len(self.predicted_label)):
-            if self.predicted_label[i] == self.test_label[i]:
+        for i in range(len(self.test_predicted)):
+            if self.test_predicted[i] == self.test_actual[i]:
                 base += 1
-        acc = base/len(self.predicted_label)
+        acc = base / len(self.test_predicted)
         return acc
 
     def recall(self):
@@ -174,17 +181,17 @@ class RelevantHTML:
         irre_pre = 0
         re_lab = 0
         re_pre = 0
-        for i in range(len(self.test_label)):
-            if self.test_label[i] == 0:
+        for i in range(len(self.test_actual)):
+            if self.test_actual[i] == 0:
                 irre_lab += 1
-                if self.predicted_label[i] == 0:
+                if self.test_predicted[i] == 0:
                     irre_pre += 1
             else:
                 re_lab += 1
-                if self.test_label[i] == 1:
+                if self.test_actual[i] == 1:
                     re_pre += 1
-        irre_recall = irre_pre/irre_lab
-        re_recall = re_pre/re_lab
+        irre_recall = irre_pre / irre_lab
+        re_recall = re_pre / re_lab
         return re_recall, irre_recall
 
     def precision(self):
@@ -192,25 +199,34 @@ class RelevantHTML:
         irre_pre = 0
         re_lab = 0
         re_pre = 0
-        for i in range(len(self.predicted_label)):
-            if self.predicted_label[i] == 0:
+        for i in range(len(self.test_predicted)):
+            if self.test_predicted[i] == 0:
                 irre_pre += 1
-                if self.test_label[i] == 0:
+                if self.test_actual[i] == 0:
                     irre_lab += 1
             else:
                 re_pre += 1
-                if self.test_label[i] == 1:
+                if self.test_actual[i] == 1:
                     re_lab += 1
-        irre_precision = irre_lab/irre_pre
-        re_precision = re_lab/re_pre
+        irre_precision = irre_lab / irre_pre
+        re_precision = re_lab / re_pre
         return re_precision, irre_precision
+
+    def f1_score(self):
+        re_recall, irre_recall = self.recall()
+        re_precision, irre_precision = self.precision()
+        re_f = 2 * re_recall * re_precision / (re_recall + re_precision)
+        irre_f = 2 * irre_recall * irre_precision / (
+            irre_recall + irre_precision)
+        return re_f, irre_f
 
     # return the prediction label
     def predict(self, url):
         ret = self.extract_text_by_tags(url)
         if ret:
             fea = self.complete_features([ret])
-            fea_res = np.dot(np.column_stack((fea, np.ones((len(fea), 1)))), self.weights)
+            fea_res = np.dot(
+                np.column_stack((fea, np.ones((len(fea), 1)))), self.weights)
             res = 0
             if fea_res[0] >= 0.5:
                 res = 1
@@ -218,15 +234,19 @@ class RelevantHTML:
         else:
             return "Error: URL can not be reached."
 
+
 def main():
-    bata = RelevantHTML('university')
-    bata.fit('data/train.txt')
-    res = bata.valid('data/test.txt')
-    print('Result: prediction, validation', res, sep='\n')
-    print(bata.accuracy())
-    print(bata.recall())
-    print(bata.precision())
-    print(bata.predict('https://www.nydailynews.com/sd-no-schoolnews-parkuniversity-grads-20181015-story.html'))
+    clf = RelevantHTML('university')
+    clf.fit('data/train.txt')
+    clf.valid('data/test.txt')
+    print(clf.accuracy())
+    print(clf.recall())
+    print(clf.precision())
+    print(clf.f1_score())
+    lbl = clf.predict(
+        'https://www.nydailynews.com/'
+        'sd-no-schoolnews-parkuniversity-grads-20181015-story.html')
+    print('Relevant' if lbl == 1 else 'Irrelevant')
 
 
 if __name__ == '__main__':
