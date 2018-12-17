@@ -133,7 +133,7 @@ class RelevantHTML:
 
     # filename [label url]
     # return the prediction label and validation label
-    def predict(self, filename):
+    def valid(self, filename):
         # read test tag:text and label
         test = open(filename, 'r').read().split('\n')
         to_test = []
@@ -205,15 +205,28 @@ class RelevantHTML:
         re_precision = re_lab/re_pre
         return re_precision, irre_precision
 
+    # return the prediction label
+    def predict(self, url):
+        ret = self.extract_text_by_tags(url)
+        if ret:
+            fea = self.complete_features([ret])
+            fea_res = np.dot(np.column_stack((fea, np.ones((len(fea), 1)))), self.weights)
+            res = 0
+            if fea_res[0] >= 0.5:
+                res = 1
+            return res
+        else:
+            return "Error: URL can not be reached."
 
 def main():
     bata = RelevantHTML('university')
     bata.fit('data/train.txt')
-    res = bata.predict('data/test.txt')
+    res = bata.valid('data/test.txt')
     print('Result: prediction, validation', res, sep='\n')
     print(bata.accuracy())
     print(bata.recall())
     print(bata.precision())
+    print(bata.predict('https://www.nydailynews.com/sd-no-schoolnews-parkuniversity-grads-20181015-story.html'))
 
 
 if __name__ == '__main__':
