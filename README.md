@@ -11,3 +11,7 @@ python3 -m pip install --index-url https://test.pypi.org/simple/ relevance_html
   
 ### Train Feature weight:
   Use linear regression to train the weight of features.
+  
+## Quick Try
+
+    python3 relevance_html.py
